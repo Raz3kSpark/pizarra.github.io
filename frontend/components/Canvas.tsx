@@ -179,6 +179,7 @@ export default function Canvas({ color, grosor, herramienta, tipoForma }: Props)
         .catch((err) => console.error("No se pudo cargar el historial:", err));
 
       const socket = obtenerSocket();
+      setConectado(socket.connected);
       socket.on("connect", () => setConectado(true));
       socket.on("disconnect", () => setConectado(false));
       socket.on("trazo:nuevo", (trazo: Trazo) => {
