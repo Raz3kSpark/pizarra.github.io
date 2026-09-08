@@ -1,0 +1,57 @@
+// Esquema de base de datos para la Pizarra Colaborativa
+// Ejecuta `npx prisma migrate dev --name init` después de configurar DATABASE_URL en .env
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Trazo {
+  id           String   @id @default(uuid())
+  chunkX       Int
+  chunkY       Int
+  herramienta  String // "pincel" | "texto" | "borrador" | "forma"
+  puntos       Json // array de {x, y}
+  color        String
+  grosor       Int
+  texto        String?
+  tipoForma    String? // solo si herramienta === "forma": rectangulo | circulo | linea | flecha
+  autorAnonId  String
+  eliminado    Boolean  @default(false)
+  creadoEn     DateTime @default(now())
+
+  votacion     Votacion?
+
+  // Índice compuesto: acelera muchísimo la consulta "dame los trazos de este chunk"
+  @@index([chunkX, chunkY])
+}
+
+model Votacion {
+  id         String    @id @default(uuid())
+  trazo      Trazo     @relation(fields: [trazoId], references: [id])
+  trazoId    String    @unique
+  creadaEn   DateTime  @default(now())
+  expiraEn   DateTime
+  resuelta   Boolean   @default(false)
+  aprobada   Boolean?
+  votos      Voto[]
+
+  // Anti-abuso: quién inició la votación, para limitar cuántas puede abrir la misma sesión
+  iniciadaPor String
+}
+
+model Voto {
+  id          String   @id @default(uuid())
+  votacion    Votacion @relation(fields: [votacionId], references: [id])
+  votacionId  String
+  votanteAnonId String
+  valor       Boolean // true = sí borrar, false = no borrar
+  creadoEn    DateTime @default(now())
+
+  // Un mismo visitante anónimo no puede votar dos veces la misma votación
+  @@unique([votacionId, votanteAnonId])
+}
