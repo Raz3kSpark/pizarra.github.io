@@ -59,10 +59,11 @@ votacionesRouter.post("/:id/votar", async (req, res) => {
     const total = votos.length;
     const aprobada = total >= QUORUM_MIN && votosSi / total >= UMBRAL;
 
-    resultado = await prisma.votacion.update({
+    const votacionActualizada = await prisma.votacion.update({
       where: { id },
       data: { resuelta: true, aprobada },
     });
+    resultado = { ...votacionActualizada, votosSi, votosNo };
 
     if (aprobada) {
       await prisma.trazo.update({
